@@ -33,24 +33,24 @@
 #include <WiFiUdp.h>
 
 // GPIO pin number for the LEDs
-#define PIN_GREEN 26
+#define PIN_POWER 26
 #define PIN_YELLOW 27
-#define PIN_BLUE 25
+#define PIN_CONNECTED 25
 
 // GPIO pin number for the joystick
-#define PIN_X 35
-#define PIN_Y 34
+#define PIN_X 34
+#define PIN_Y 35
 #define PIN_SW 4
 
 
 // PWM channels
-#define PWM_GREEN 0
-#define PWM_YELLOW 1
-#define PWM_BLUE 2
+// #define PWM_POWER 0
+// #define PWM_YELLOW 1
+// #define PWM_CONNECTED 2
 
 // WiFi parameters
-const char *ssid = "smartyrobot2";
-const char *password = "smartyrobot2";
+const char *ssid = "smartyrobot_cathy";
+const char *password = "smartyrobot_cathy";
 //const char *ssid = "emmawifi";
 //const char *password = "8067868889";
 boolean connected = false;
@@ -78,10 +78,10 @@ int valSw_old = 0;
 
 void setup()
 {
-    adcAttachPin(PIN_Y);
-    adcAttachPin(PIN_X);
+    // adcAttachPin(PIN_Y);
+    // adcAttachPin(PIN_X);
 
-    analogSetClockDiv(64);
+    // analogSetClockDiv(64);
   
     // initilize hardware serial:
     Serial.begin(921600);
@@ -93,27 +93,18 @@ void setup()
     pinMode(PIN_SW, INPUT_PULLUP);
 
     // configure LED PWM functionalitites
-    pinMode(PIN_GREEN, OUTPUT);
-    pinMode(PIN_YELLOW, OUTPUT);
-    pinMode(PIN_BLUE, OUTPUT);
+    pinMode(PIN_POWER, OUTPUT);
+    pinMode(PIN_CONNECTED, OUTPUT);
 
-    ledcSetup(PWM_GREEN, pwmFreq, pwmResolution);
-    ledcAttachPin(PIN_GREEN, PWM_GREEN);
-
-    ledcSetup(PWM_YELLOW, pwmFreq, pwmResolution);
-    ledcAttachPin(PIN_YELLOW, PWM_YELLOW);
-
-    ledcSetup(PWM_BLUE, pwmFreq, pwmResolution);
-    ledcAttachPin(PIN_BLUE, PWM_BLUE);
+    ledcAttach(PIN_POWER, pwmFreq, pwmResolution);
+    ledcAttach(PIN_CONNECTED, pwmFreq, pwmResolution);
 
     // blink LEDs
-    ledcWrite(PWM_GREEN, 2);
-    ledcWrite(PWM_YELLOW, 2);
-    ledcWrite(PWM_BLUE, 2);
+    ledcWrite(PIN_POWER, 2);
+    ledcWrite(PIN_CONNECTED, 2);
     delay(1000);
-    ledcWrite(PWM_GREEN, 0);
-    ledcWrite(PWM_YELLOW, 0);
-    ledcWrite(PWM_BLUE, 0);
+
+    ledcWrite(PIN_CONNECTED, 0);
 
     // connect to the WiFi network
     connectToWiFi(ssid, password);
@@ -125,11 +116,20 @@ void loop()
     valY = analogRead(PIN_Y);
     valSw = digitalRead(PIN_SW);
 
-    int temp_valX = floor(valX/32);
-    int temp_valY = floor(valY/32);
+    int temp_valX = floor(valX/64);
+    int temp_valY = floor(valY/64);
 
-    int temp_valX_old = floor(valX_old/32);
-    int temp_valY_old = floor(valY_old/32);
+    int temp_valX_old = floor(valX_old/64);
+    int temp_valY_old = floor(valY_old/64);
+
+    // Serial.println("loop:");
+    // Serial.println(valX);
+    // Serial.println(temp_valX);
+    // Serial.println(temp_valX_old);
+
+    // Serial.println(valY);
+    // Serial.println(temp_valY);
+    // Serial.println(temp_valY_old);
 
     // only send UDP when the joystick is moved
     if ((temp_valX != temp_valX_old) || (temp_valY != temp_valY_old) || (valSw != valSw_old))
@@ -139,13 +139,13 @@ void loop()
         valSw_old = valSw;
         if (connected)
         {
-            ledcWrite(PWM_BLUE, 2);
+            // ledcWrite(PIN_CONNECTED, 2);
             // send joystick values to the UDP server
             udp.beginPacket(udpAddress, udpPort);
             udp.printf("X%d:Y%d:S%d:", valX, valY, valSw);
 //            udp.printf("X%d:Y%d:S%d:", temp_valX, temp_valY, valSw);
             udp.endPacket();
-            ledcWrite(PWM_BLUE, 0);
+            // ledcWrite(PIN_CONNECTED, 0);
         }
     }
 
@@ -154,7 +154,7 @@ void loop()
 
 void connectToWiFi(const char *ssid, const char *pwd)
 {
-    ledcWrite(PWM_YELLOW, 2);
+    ledcWrite(PIN_YELLOW, 2);
     Serial.println("Connecting to WiFi network: " + String(ssid));
 
     // delete old config
@@ -181,14 +181,16 @@ void WiFiEvent(WiFiEvent_t event)
         // this initializes the transfer buffer
         udp.begin(WiFi.localIP(), udpPort);
         connected = true;
-        ledcWrite(PWM_YELLOW, 0);
-        ledcWrite(PWM_GREEN, 2);
+        // ledcWrite(PIN_YELLOW, 0);
+        ledcWrite(PIN_CONNECTED, 2);
+        
         break;
     case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
         Serial.println("WiFi lost connection");
         connected = false;
-        ledcWrite(PWM_YELLOW, 2);
-        ledcWrite(PWM_GREEN, 0);
+        ledcWrite(PIN_CONNECTED, 0);
+        // ledcWrite(PIN_YELLOW, 2);
+        // ledcWrite(PIN_POWER, 0);
         break;
     default:
         break;
