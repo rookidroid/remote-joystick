@@ -38,9 +38,9 @@
 #define PIN_RGB 8
 
 // GPIO pin number for the joystick
-#define PIN_X 34
-#define PIN_Y 35
-#define PIN_SW 4
+#define PIN_X 0
+#define PIN_Y 1
+#define PIN_SW 2
 
 
 // WiFi parameters
@@ -53,9 +53,6 @@ WiFiUDP udp;
 const char *udpAddress = "192.168.4.1";
 const int udpPort = 1234;
 
-// PWM properties
-const int pwmFreq = 5000;
-const int pwmResolution = 8;
 
 // joystick values
 int valX = 0;
@@ -92,64 +89,45 @@ void setup()
     rgbLed.begin(); 
     rgbLed.show(); 
 
-    // // configure joystick pin mode
-    // pinMode(PIN_Y, ANALOG);
-    // pinMode(PIN_X, ANALOG);
+    // configure joystick pin mode
+    pinMode(PIN_Y, ANALOG);
+    pinMode(PIN_X, ANALOG);
 
-    // pinMode(PIN_SW, INPUT_PULLUP);
-
-    // // configure LED PWM functionalitites
-    // pinMode(PIN_POWER, OUTPUT);
-    // pinMode(PIN_CONNECTED, OUTPUT);
-
-    // ledcAttach(PIN_POWER, pwmFreq, pwmResolution);
-    // ledcAttach(PIN_CONNECTED, pwmFreq, pwmResolution);
-
-    // // blink LEDs
-    // ledcWrite(PIN_POWER, 2);
-    // ledcWrite(PIN_CONNECTED, 2);
-    // delay(1000);
-
-    // ledcWrite(PIN_CONNECTED, 0);
+    pinMode(PIN_SW, INPUT_PULLUP);
 
     // connect to the WiFi network
     connectToWiFi(ssid, password);
-
-    setColor(COLOR_GREEN);
 }
-
 
 
 void loop()
 {
-//     valX = analogRead(PIN_X);
-//     valY = analogRead(PIN_Y);
-//     valSw = digitalRead(PIN_SW);
+    valX = analogRead(PIN_X);
+    valY = analogRead(PIN_Y);
+    valSw = digitalRead(PIN_SW);
 
-//     int temp_valX = floor(valX/64);
-//     int temp_valY = floor(valY/64);
+    Serial.println("X: " + String(valX)+", Y: " + String(valY)+", SW: " + String(valSw));
 
-//     int temp_valX_old = floor(valX_old/64);
-//     int temp_valY_old = floor(valY_old/64);
+    int temp_valX = floor(valX/64);
+    int temp_valY = floor(valY/64);
 
+    int temp_valX_old = floor(valX_old/64);
+    int temp_valY_old = floor(valY_old/64);
 
-//     // only send UDP when the joystick is moved
-//     if ((temp_valX != temp_valX_old) || (temp_valY != temp_valY_old) || (valSw != valSw_old))
-//     {
-//         valX_old = valX;
-//         valY_old = valY;
-//         valSw_old = valSw;
-//         if (connected)
-//         {
-//             // ledcWrite(PIN_CONNECTED, 2);
-//             // send joystick values to the UDP server
-//             udp.beginPacket(udpAddress, udpPort);
-//             udp.printf("X%d:Y%d:S%d:", valX, valY, valSw);
-// //            udp.printf("X%d:Y%d:S%d:", temp_valX, temp_valY, valSw);
-//             udp.endPacket();
-//             // ledcWrite(PIN_CONNECTED, 0);
-//         }
-//     }
+    // only send UDP when the joystick is moved
+    if ((temp_valX != temp_valX_old) || (temp_valY != temp_valY_old) || (valSw != valSw_old))
+    {
+        valX_old = valX;
+        valY_old = valY;
+        valSw_old = valSw;
+        if (connected)
+        {
+            // send joystick values to the UDP server
+            udp.beginPacket(udpAddress, udpPort);
+            udp.printf("X%d:Y%d:S%d:", valX, valY, valSw);
+            udp.endPacket();
+        }
+    }
 
     delay(10);
 }
@@ -182,16 +160,14 @@ void WiFiEvent(WiFiEvent_t event)
         // this initializes the transfer buffer
         udp.begin(WiFi.localIP(), udpPort);
         connected = true;
-        // ledcWrite(PIN_YELLOW, 0);
-        ledcWrite(PIN_CONNECTED, 2);
+        setColor(COLOR_GREEN);
         
         break;
     case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
         Serial.println("WiFi lost connection");
         connected = false;
-        ledcWrite(PIN_CONNECTED, 0);
-        // ledcWrite(PIN_YELLOW, 2);
-        // ledcWrite(PIN_POWER, 0);
+        setColor(COLOR_RED);
+
         break;
     default:
         break;
