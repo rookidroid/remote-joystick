@@ -38,14 +38,16 @@
 #define PIN_RGB 8
 
 // GPIO pin number for the joystick
-#define PIN_X 0
-#define PIN_Y 1
-#define PIN_SW 2
+#define PIN_X 3
+#define PIN_Y 2
+#define PIN_SW 1
 
+
+float scale = 4096.0/3250.0;
 
 // WiFi parameters
-const char *ssid = "smartyrobot_cathy";
-const char *password = "smartyrobot_cathy";
+const char *ssid = "smartyrobot_nick";
+const char *password = "smartyrobot_nick";
 boolean connected = false;
 
 // UDP
@@ -102,8 +104,8 @@ void setup()
 
 void loop()
 {
-    valX = analogRead(PIN_X);
-    valY = analogRead(PIN_Y);
+    valX = analogRead(PIN_X)*scale;
+    valY = analogRead(PIN_Y)*scale;
     valSw = digitalRead(PIN_SW);
 
     Serial.println("X: " + String(valX)+", Y: " + String(valY)+", SW: " + String(valSw));
